@@ -47,11 +47,6 @@ CPPFLAGS+=	-D${MACHINE}
 DEFGP?=		-G 0
 GP?=		${DEFGP}
 
-.if ${ACTIVE_CC} == "gcc"
-COPTS.mips_fpu.c+=	-mhard-float -Wa,-mhard-float
-AFLAGS.fp.S+=		-Wa,-mhard-float
-.endif
-
 CFLAGS+=	${GP} -mno-abicalls -msoft-float -ffixed-24
 .if defined(LP64) && ${LP64} == "yes"
 .if ${MACHINE_MIPS64}
@@ -73,7 +68,7 @@ SYSTEM_LD_TAIL_EXTRA+= \
 		${OBJCOPY} -O elf32-ntradlittlemips $@ $@.elf32
 .endif
 .endif # LP64=yes
-AFLAGS+=	-mno-abicalls -x assembler-with-cpp ${AOPTS}
+AFLAGS+=	-mno-abicalls -msoft-float -x assembler-with-cpp ${AOPTS}
 
 ##
 ## (3) libkern and compat

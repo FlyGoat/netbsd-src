@@ -98,7 +98,9 @@
 #endif
 
 /* insns are reordered in the way as MIPS architecture imposes */
+	.set    push
 	.set	reorder
+	.set	hardfloat
 
 /*----------------------------------------------------------------------------
  *
@@ -4598,3 +4600,5 @@ STATIC_LEAF(mips_emul_sigfpe)
 	j	_C_LABEL(mips_fpuexcept)
 END(mips_emul_sigfpe)
 #endif
+
+	.set    pop

@@ -102,6 +102,8 @@ mips_fpu_state_save(lwp_t *l)
 	 * interrupts remain on.
 	 */
 	__asm volatile (
+		".set push"		"\n\t"
+		".set hardfloat"	"\n\t"
 		".set noreorder"	"\n\t"
 		".set noat"		"\n\t"
 		"mfc0	%0, $%3"	"\n\t"
@@ -109,8 +111,7 @@ mips_fpu_state_save(lwp_t *l)
 		___STRING(COP0_HAZARD_FPUENABLE)
 		"cfc1	%1, $31"	"\n\t"
 		"cfc1	%1, $31"	"\n\t"
-		".set at"		"\n\t"
-		".set reorder"		"\n\t"
+		".set pop"		"\n\t"
 	    :	"=&r" (status), "=r"(fpcsr)
 	    :	"r"(tf->tf_regs[_R_SR] & (MIPS_SR_COP_1_BIT|MIPS3_SR_FR|MIPS_SR_KX|MIPS_SR_INT_IE)),
 		"n"(MIPS_COP_0_STATUS));
@@ -124,6 +125,8 @@ mips_fpu_state_save(lwp_t *l)
 		KASSERT(_MIPS_SIM_NEWABI_P(l->l_proc->p_md.md_abi));
 		fp[32] = fpcsr;
 		__asm volatile (
+			".set push			;"
+			".set hardfloat			;"
 			".set noreorder			;"
 			"sdc1	$f0, (0*%d1)(%0)	;"
 			"sdc1	$f1, (1*%d1)(%0)	;"
@@ -157,13 +160,15 @@ mips_fpu_state_save(lwp_t *l)
 			"sdc1	$f29, (29*%d1)(%0)	;"
 			"sdc1	$f30, (30*%d1)(%0)	;"
 			"sdc1	$f31, (31*%d1)(%0)	;"
-			".set reorder" :: "r"(fp), "i"(sizeof(fp[0])));
+			".set pop" :: "r"(fp), "i"(sizeof(fp[0])));
 	} else
 #endif /* !defined(__mips_o32) */
 	{
 		KASSERT(!_MIPS_SIM_NEWABI_P(l->l_proc->p_md.md_abi));
 		((int *)fp)[32] = fpcsr;
 		__asm volatile (
+			".set push			;"
+			".set hardfloat			;"
 			".set noreorder			;"
 			"swc1	$f0, (0*%d1)(%0)	;"
 			"swc1	$f1, (1*%d1)(%0)	;"
@@ -197,7 +202,7 @@ mips_fpu_state_save(lwp_t *l)
 			"swc1	$f29, (29*%d1)(%0)	;"
 			"swc1	$f30, (30*%d1)(%0)	;"
 			"swc1	$f31, (31*%d1)(%0)	;"
-		".set reorder" :: "r"(fp), "i"(4));
+		".set pop" :: "r"(fp), "i"(4));
 	}
 #endif
 	/*
@@ -235,13 +240,14 @@ mips_fpu_state_load(lwp_t *l, u_int flags)
 	 * enabling COP1 to load FP registers.  Interrupts will remain on.
 	 */
 	__asm volatile(
+		".set push"		"\n\t"
+		".set hardfloat"	"\n\t"
 		".set noreorder"			"\n\t"
 		".set noat"				"\n\t"
 		"mfc0	%0, $%2" 			"\n\t"
 		"mtc0	%1, $%2"			"\n\t"
 		___STRING(COP0_HAZARD_FPUENABLE)
-		".set at"				"\n\t"
-		".set reorder"				"\n\t"
+		".set pop"				"\n\t"
 	    : "=&r"(status)
 	    : "r"(tf->tf_regs[_R_SR] & (MIPS_SR_COP_1_BIT|MIPS3_SR_FR|MIPS_SR_KX|MIPS_SR_INT_IE)), "n"(MIPS_COP_0_STATUS));
 
@@ -253,6 +259,8 @@ mips_fpu_state_load(lwp_t *l, u_int flags)
 	if (tf->tf_regs[_R_SR] & MIPS3_SR_FR) {
 		KASSERT(_MIPS_SIM_NEWABI_P(l->l_proc->p_md.md_abi));
 		__asm volatile (
+			".set push			;"
+			".set hardfloat			;"
 			".set noreorder			;"
 			"ldc1	$f0, (0*%d1)(%0)	;"
 			"ldc1	$f1, (1*%d1)(%0)	;"
@@ -286,13 +294,15 @@ mips_fpu_state_load(lwp_t *l, u_int flags)
 			"ldc1	$f29, (29*%d1)(%0)	;"
 			"ldc1	$f30, (30*%d1)(%0)	;"
 			"ldc1	$f31, (31*%d1)(%0)	;"
-			".set reorder" :: "r"(fp), "i"(sizeof(fp[0])));
+			".set pop" :: "r"(fp), "i"(sizeof(fp[0])));
 		fpcsr = fp[32];
 	} else
 #endif
 	{
 		KASSERT(!_MIPS_SIM_NEWABI_P(l->l_proc->p_md.md_abi));
 		__asm volatile (
+			".set push			;"
+			".set hardfloat			;"
 			".set noreorder			;"
 			"lwc1	$f0, (0*%d1)(%0)	;"
 			"lwc1	$f1, (1*%d1)(%0)	;"
@@ -326,7 +336,7 @@ mips_fpu_state_load(lwp_t *l, u_int flags)
 			"lwc1	$f29, (29*%d1)(%0)	;"
 			"lwc1	$f30, (30*%d1)(%0)	;"
 			"lwc1	$f31, (31*%d1)(%0)	;"
-			".set reorder"
+			".set 	pop"
 		    :
 		    : "r"(fp), "i"(4));
 		fpcsr = ((int *)fp)[32];
@@ -341,13 +351,14 @@ mips_fpu_state_load(lwp_t *l, u_int flags)
 	 */
 	fpcsr &= ~MIPS_FCSR_CAUSE;
 	__asm volatile(
+		".set push"		"\n\t"
+		".set hardfloat"	"\n\t"
 		".set noreorder"	"\n\t"
 		".set noat"		"\n\t"
 		"ctc1	%0, $31"	"\n\t"
 		"nop"			"\n\t"	/* XXX: Hack */
 		"mtc0	%1, $%2"	"\n\t"
-		".set at"		"\n\t"
-		".set reorder"		"\n\t"
+		".set pop"		"\n\t"
 	    ::	"r"(fpcsr), "r"(status),
 		"n"(MIPS_COP_0_STATUS));
 }
