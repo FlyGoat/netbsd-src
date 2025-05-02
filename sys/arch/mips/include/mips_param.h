@@ -27,6 +27,7 @@
  */
 
 #ifdef _KERNEL_OPT
+#include "opt_cputype.h"
 #include "opt_param.h"
 #endif
 
